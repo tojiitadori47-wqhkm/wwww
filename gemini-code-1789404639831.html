@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Omnitrix Interface</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-green: #00ff41;
+            --dark-green: #008f11;
+            --bg-black: #050505;
+            --hud-bg: rgba(0, 255, 65, 0.05);
+            --hud-border: rgba(0, 255, 65, 0.3);
+            --glass-blur: blur(12px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+        body {
+            background-color: var(--bg-black);
+            color: var(--neon-green);
+            font-family: 'Share Tech Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                radial-gradient(circle at center, #0a1a0f 0%, #000 70%),
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        /* --- HUD ELEMENTS --- */
+        .hud-panel {
+            position: absolute;
+            background: var(--hud-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--hud-border);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,255,65,0.1);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .hud-top-left { top: 20px; left: 20px; }
+        .hud-top-right { top: 20px; right: 20px; text-align: right; }
+        .hud-bottom-left { bottom: 20px; left: 20px; }
+        .hud-bottom-right { bottom: 20px; right: 20px; }
+
+        .hud-title { font-size: 0.8rem; opacity: 0.7; letter-spacing: 2px; margin-bottom: 5px; }
+        .hud-value { font-size: 1.2rem; text-shadow: 0 0 8px var(--neon-green); }
+        
+        .scanning-line {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: rgba(0,255,65,0.5);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: scan 4s linear infinite;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        @keyframes scan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        /* --- OMNITRIX CORE --- */
+        .omnitrix-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            z-index: 20;
+            perspective: 1000px;
+        }
+
+        .omnitrix {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #222 30%, #111 70%, #000 100%);
+            border: 10px solid #333;
+            box-shadow: 
+                inset 0 0 30px #000,
+                0 0 20px rgba(0, 255, 65, 0.2),
+                0 0 50px rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s;
+            transform-style: preserve-3d;
+        }
+
+        .omnitrix:hover {
+            box-shadow: 
+                inset 0 0 30px #000,
+                0 0 40px rgba(0, 255, 65, 0.5);
+        }
+
+        .omnitrix.active {
+            transform: scale(1.1) rotateZ(90deg);
+            box-shadow: 
+                inset 0 0 30px #000,
+                0 0 60px var(--neon-green);
+        }
+
+        .core-lens {
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #555;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .omnitrix.active .core-lens {
+            transform: translateZ(30px);
+            border-color: var(--neon-green);
+            background: radial-gradient(circle, rgba(0,255,65,0.2) 0%, #000 80%);
+        }
+
+        .hourglass {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            clip-path: polygon(0% 0%, 100% 0%, 50% 50%, 100% 100%, 0% 100%, 50% 50%);
+            background: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green);
+            transition: all 0.4s ease;
+        }
+
+        .omnitrix.active .hourglass {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            width: 85%;
+            height: 85%;
+            background: transparent;
+            border: 4px solid var(--neon-green);
+            box-shadow: inset 0 0 15px var(--neon-green), 0 0 15px var(--neon-green);
+        }
+
+        .alien-hologram {
+            position: absolute;
+            width: 60%;
+            height: 60%;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s;
+            filter: drop-shadow(0 0 5px var(--neon-green));
+            fill: #000;
+        }
+
+        .omnitrix.active .alien-hologram {
+            opacity: 1;
+            transform: scale(1) rotateZ(-90deg); /* Counter-rotate due to dial rotation */
+        }
+
+        /* --- UI RINGS --- */
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            pointer-events: none;
+        }
+        
+        .ring-1 {
+            width: 340px; height: 340px;
+            border-top: 2px dashed var(--hud-border);
+            border-bottom: 2px dashed var(--hud-border);
+            animation: spin 10s linear infinite;
+        }
+
+        .ring-2 {
+            width: 380px; height: 380px;
+            border-left: 2px solid rgba(0,255,65,0.2);
+            border-right: 2px solid rgba(0,255,65,0.2);
+            animation: spin 15s linear infinite reverse;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- CINEMATIC TRANSFORMATION --- */
+        .flash-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+            transition: opacity 0.1s;
+        }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 2px, 0) scale(1.1); }
+            20%, 80% { transform: translate3d(4px, -2px, 0) scale(1.1); }
+            30%, 50%, 70% { transform: translate3d(-6px, 4px, 0) scale(1.1); }
+            40%, 60% { transform: translate3d(6px, -4px, 0) scale(1.1); }
+        }
+
+        /* --- TRANSFORMATION MODE --- */
+        .transformation-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-black);
+            z-index: 80;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .transformation-screen.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .alien-display-large {
+            width: 300px; height: 300px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px currentColor);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .alien-name-large { font-size: 4rem; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 5px; }
+        .alien-type { font-size: 1.5rem; opacity: 0.8; margin-bottom: 30px; letter-spacing: 2px; }
+        
+        .ability-buttons { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
+        .ability-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid currentColor;
+            color: inherit;
+            padding: 10px 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            cursor: pointer;
+            backdrop-filter: var(--glass-blur);
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .ability-btn:hover { background: currentColor; color: #000; box-shadow: 0 0 15px currentColor; }
+
+        .detransform-btn {
+            position: absolute;
+            bottom: 30px;
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.2rem;
+            transition: 0.3s;
+        }
+        .detransform-btn:hover { background: var(--neon-green); color: #000; }
+
+        /* --- DATABASE --- */
+        .db-btn { cursor: pointer; text-decoration: underline; pointer-events: auto;}
+        
+        .database-modal {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 80%; height: 80%;
+            background: rgba(0, 15, 5, 0.9);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--neon-green);
+            z-index: 90;
+            border-radius: 10px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(0,255,65,0.2);
+        }
+
+        .database-modal.active { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+        .db-header { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 1.5rem; border-bottom: 1px solid var(--hud-border); padding-bottom: 10px;}
+        .close-db { cursor: pointer; color: #ff3333; }
+        
+        .db-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .db-card {
+            background: var(--hud-bg);
+            border: 1px solid var(--hud-border);
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .db-card:hover { background: rgba(0,255,65,0.2); box-shadow: 0 0 10px var(--neon-green); }
+        .db-card svg { width: 60px; height: 60px; margin-bottom: 10px; fill: var(--neon-green); }
+
+        /* Media Queries for Mobile/Tablet */
+        @media (max-width: 768px) {
+            .hud-panel { padding: 10px; font-size: 0.9rem; }
+            .hud-value { font-size: 1rem; }
+            .omnitrix-container { width: 220px; height: 220px; }
+            .ring-1 { width: 250px; height: 250px; }
+            .ring-2 { width: 280px; height: 280px; }
+            .alien-name-large { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanning-line"></div>
+    <div class="flash-overlay" id="flashOverlay"></div>
+
+    <!-- HUD -->
+    <div class="hud-panel hud-top-left">
+        <div class="hud-title">SYSTEM STATUS</div>
+        <div class="hud-value" id="statusText">IDLE</div>
+    </div>
+    
+    <div class="hud-panel hud-top-right">
+        <div class="hud-title">POWER CORE</div>
+        <div class="hud-value">100%</div>
+    </div>
+
+    <div class="hud-panel hud-bottom-left">
+        <div class="hud-title">SELECTED DNA</div>
+        <div class="hud-value" id="selectedAlienText">NONE</div>
+        <div class="hud-title" style="margin-top:10px; font-size: 0.6rem;">SCROLL/SWIPE TO SELECT</div>
+    </div>
+
+    <div class="hud-panel hud-bottom-right">
+        <div class="hud-title">ARCHIVES</div>
+        <div class="hud-value db-btn" id="openDbBtn">ALIEN DATABASE</div>
+        <div class="hud-title" style="margin-top:10px; cursor:pointer;" id="muteBtn">AUDIO: ON</div>
+    </div>
+
+    <!-- OMNITRIX -->
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="omnitrix-container" id="omnitrixContainer">
+        <div class="omnitrix" id="omnitrix">
+            <div class="core-lens">
+                <div class="hourglass"></div>
+                <svg class="alien-hologram" id="hologramSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Path injected by JS -->
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANSFORMATION SCREEN -->
+    <div class="transformation-screen" id="transformScreen">
+        <svg class="alien-display-large" id="tsSvg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="alien-name-large" id="tsName">HEATBLAST</div>
+        <div class="alien-type" id="tsType">PYRONITE</div>
+        <div class="ability-buttons" id="tsAbilities">
+            <!-- Buttons injected by JS -->
+        </div>
+        <button class="detransform-btn" id="detransformBtn">TIMEOUT / DETRANSFORM</button>
+    </div>
+
+    <!-- DATABASE MODAL -->
+    <div class="database-modal" id="dbModal">
+        <div class="db-header">
+            <span>CODON STREAM DATABASE</span>
+            <span class="close-db" id="closeDbBtn">X</span>
+        </div>
+        <div class="db-grid" id="dbGrid">
+            <!-- Cards injected by JS -->
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        // SVGs use basic stylized geometric silhouettes to represent aliens dynamically.
+        const aliens = [
+            { id: 0, name: "Heatblast", type: "Pyronite", color: "#ff4500", 
+              abilities: ["Fireball", "Flame Surf", "Supernova"], 
+              svg: '<path d="M50 10 C30 30, 20 60, 30 80 L50 90 L70 80 C80 60, 70 30, 50 10 Z" /><circle cx="50" cy="40" r="10" fill="#fff"/>' },
+            { id: 1, name: "Four Arms", type: "Tetramand", color: "#cc0000", 
+              abilities: ["Sonic Clap", "Ground Smash", "Super Strength"], 
+              svg: '<rect x="35" y="20" width="30" height="60" /><path d="M35 30 L10 20 L5 30 L35 40 Z" /><path d="M65 30 L90 20 L95 30 L65 40 Z" /><path d="M35 50 L10 60 L15 70 L35 60 Z" /><path d="M65 50 L90 60 L85 70 L65 60 Z" />' },
+            { id: 2, name: "XLR8", type: "Kineceleran", color: "#00aaff", 
+              abilities: ["Mach Speed", "Vortex Creation", "Wall Run"], 
+              svg: '<path d="M50 10 L40 40 L30 40 L45 90 L55 90 L70 40 L60 40 Z" /><polygon points="45,20 55,20 50,30" fill="#fff"/>' },
+            { id: 3, name: "Diamondhead", type: "Petrosapien", color: "#00ffcc", 
+              abilities: ["Crystal Shoot", "Construct Wall", "Regeneration"], 
+              svg: '<polygon points="50,10 70,40 60,90 40,90 30,40" /><polygon points="50,30 60,50 40,50" fill="#fff"/>' },
+            { id: 4, name: "Upgrade", type: "Galvanic Mechamorph", color: "#00ff41", 
+              abilities: ["Techno-Kinesis", "Laser Eye", "Liquid Form"], 
+              svg: '<path d="M20 20 Q50 0 80 20 Q90 50 80 80 Q50 100 20 80 Q10 50 20 20 Z" /><circle cx="50" cy="50" r="12" fill="#000" stroke="#00ff41" stroke-width="4"/>' },
+            { id: 5, name: "Stinkfly", type: "Lepidopteran", color: "#99cc00", 
+              abilities: ["Slime Spit", "Flight", "Stink Gas"], 
+              svg: '<ellipse cx="50" cy="50" rx="15" ry="30" /><path d="M35 50 Q10 30 20 10 Q35 30 50 35 Z" /><path d="M65 50 Q90 30 80 10 Q65 30 50 35 Z" />' },
+            { id: 6, name: "Ripjaws", type: "Piscciss Volann", color: "#666699", 
+              abilities: ["Crushing Jaws", "Water Breathing", "Fast Swim"], 
+              svg: '<path d="M30 20 C50 0 70 20 70 50 C70 80 50 90 50 90 C50 90 30 80 30 50 Z" /><polygon points="40,60 60,60 50,80" fill="#fff"/>' },
+            { id: 7, name: "Ghostfreak", type: "Ectonurite", color: "#999999", 
+              abilities: ["Intangibility", "Invisibility", "Possession"], 
+              svg: '<path d="M30 30 C30 10 70 10 70 30 C70 50 80 70 90 90 C60 80 40 100 10 90 C20 70 30 50 30 30 Z" /><circle cx="50" cy="30" r="5" fill="#fff"/>' },
+            { id: 8, name: "Wildmutt", type: "Vulpimancer", color: "#ff9900", 
+              abilities: ["Enhanced Senses", "Agility", "Sharp Claws"], 
+              svg: '<path d="M20 60 Q50 30 80 60 L90 80 L10 80 Z" /><path d="M20 60 Q20 40 40 40 L30 20 L50 30 L70 20 L60 40 Q80 40 80 60 Z" />' },
+            { id: 9, name: "Cannonbolt", type: "Arburian Pelarota", color: "#ffcc00", 
+              abilities: ["Sphere Roll", "Ricochet", "Invulnerability"], 
+              svg: '<circle cx="50" cy="50" r="40" /><path d="M20 50 Q50 20 80 50 Q50 80 20 50 Z" fill="#000"/><circle cx="50" cy="50" r="10" fill="#ffcc00"/>' }
+        ];
+
+        // --- STATE ---
+        let state = 'idle'; // idle, active, transformed
+        let currentIndex = 0;
+        let isMuted = false;
+
+        // --- DOM ELEMENTS ---
+        const omnitrix = document.getElementById('omnitrix');
+        const container = document.getElementById('omnitrixContainer');
+        const hologramSvg = document.getElementById('hologramSvg');
+        const statusText = document.getElementById('statusText');
+        const selectedAlienText = document.getElementById('selectedAlienText');
+        const flashOverlay = document.getElementById('flashOverlay');
+        const transformScreen = document.getElementById('transformScreen');
+        const tsSvg = document.getElementById('tsSvg');
+        const tsName = document.getElementById('tsName');
+        const tsType = document.getElementById('tsType');
+        const tsAbilities = document.getElementById('tsAbilities');
+        const detransformBtn = document.getElementById('detransformBtn');
+        
+        const dbModal = document.getElementById('dbModal');
+        const openDbBtn = document.getElementById('openDbBtn');
+        const closeDbBtn = document.getElementById('closeDbBtn');
+        const dbGrid = document.getElementById('dbGrid');
+        const muteBtn = document.getElementById('muteBtn');
+
+        // --- AUDIO SYNTHESIS ---
+        // Using Web Audio API to procedurally generate sound effects so no external files are needed.
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playTone(freq, type, duration, vol=0.1) {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function sndActivate() {
+            playTone(400, 'square', 0.1, 0.1);
+            setTimeout(() => playTone(600, 'square', 0.2, 0.1), 100);
+            setTimeout(() => playTone(800, 'sine', 0.4, 0.2), 200);
+        }
+
+        function sndScroll() {
+            playTone(900, 'triangle', 0.05, 0.05);
+        }
+
+        function sndTransform() {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            // Complex transform sound: Deep bass sweep + white noise blast
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 1);
+            
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 1.5);
+        }
+
+        function sndAbility() {
+            playTone(300, 'square', 0.2, 0.2);
+        }
+
+        function sndDetransform() {
+            playTone(150, 'sine', 0.5, 0.2);
+            setTimeout(() => playTone(100, 'sine', 0.6, 0.2), 200);
+        }
+
+        // --- CORE LOGIC ---
+        
+        function updateHologram() {
+            const alien = aliens[currentIndex];
+            hologramSvg.innerHTML = alien.svg;
+            selectedAlienText.innerText = alien.name;
+        }
+
+        function toggleActive() {
+            if (state === 'transformed') return;
+
+            if (state === 'idle') {
+                state = 'active';
+                omnitrix.classList.add('active');
+                statusText.innerText = 'ACTIVE - AWAITING INPUT';
+                updateHologram();
+                sndActivate();
+            } else if (state === 'active') {
+                triggerTransformation();
+            }
+        }
+
+        function triggerTransformation() {
+            state = 'transformed';
+            sndTransform();
+            
+            // Screen Shake and Flash
+            container.classList.add('shake');
+            flashOverlay.style.opacity = '1';
+            flashOverlay.style.background = aliens[currentIndex].color;
+            
+            setTimeout(() => {
+                flashOverlay.style.background = '#fff';
+            }, 100);
+
+            setTimeout(() => {
+                container.classList.remove('shake');
+                flashOverlay.style.opacity = '0';
+                omnitrix.classList.remove('active');
+                
+                showTransformationScreen();
+            }, 500);
+        }
+
+        function showTransformationScreen() {
+            const alien = aliens[currentIndex];
+            
+            // Set styles based on alien theme
+            transformScreen.style.color = alien.color;
+            transformScreen.style.background = `radial-gradient(circle at center, rgba(${hexToRgb(alien.color)}, 0.2) 0%, var(--bg-black) 80%)`;
+            
+            tsSvg.innerHTML = alien.svg;
+            tsSvg.style.fill = alien.color;
+            tsName.innerText = alien.name;
+            tsType.innerText = `SPECIES: ${alien.type}`;
+            
+            // Populate abilities
+            tsAbilities.innerHTML = '';
+            alien.abilities.forEach(ability => {
+                const btn = document.createElement('button');
+                btn.className = 'ability-btn';
+                btn.innerText = ability;
+                btn.onclick = () => {
+                    sndAbility();
+                    btn.style.transform = 'scale(0.9)';
+                    setTimeout(() => btn.style.transform = 'scale(1)', 100);
+                };
+                tsAbilities.appendChild(btn);
+            });
+
+            detransformBtn.style.color = alien.color;
+            detransformBtn.style.borderColor = alien.color;
+
+            transformScreen.classList.add('active');
+            statusText.innerText = 'DNA OVERRIDE ENGAGED';
+        }
+
+        function detransform() {
+            sndDetransform();
+            flashOverlay.style.background = '#ff3333';
+            flashOverlay.style.opacity = '0.8';
+            
+            setTimeout(() => {
+                transformScreen.classList.remove('active');
+                state = 'idle';
+                statusText.innerText = 'IDLE - RECHARGING';
+                selectedAlienText.innerText = 'NONE';
+                flashOverlay.style.opacity = '0';
+                
+                setTimeout(() => {
+                    statusText.innerText = 'IDLE - READY';
+                }, 2000);
+            }, 300);
+        }
+
+        // --- CONTROLS ---
+
+        // Click to activate/transform
+        omnitrix.addEventListener('click', toggleActive);
+
+        // Scroll wheel to cycle
+        window.addEventListener('wheel', (e) => {
+            if (state !== 'active') return;
+            if (e.deltaY > 0) {
+                currentIndex = (currentIndex + 1) % aliens.length;
+            } else {
+                currentIndex = (currentIndex - 1 + aliens.length) % aliens.length;
+            }
+            sndScroll();
+            updateHologram();
+        });
+
+        // Keyboard arrows to cycle
+        window.addEventListener('keydown', (e) => {
+            if (state !== 'active') return;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                currentIndex = (currentIndex + 1) % aliens.length;
+                sndScroll();
+                updateHologram();
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                currentIndex = (currentIndex - 1 + aliens.length) % aliens.length;
+                sndScroll();
+                updateHologram();
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                triggerTransformation();
+            }
+        });
+
+        // Mobile swipe support
+        let touchStartX = 0;
+        window.addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
+        window.addEventListener('touchend', e => {
+            if (state !== 'active') return;
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 30) {
+                // Swipe Left
+                currentIndex = (currentIndex + 1) % aliens.length;
+                sndScroll();
+                updateHologram();
+            }
+            if (touchEndX > touchStartX + 30) {
+                // Swipe Right
+                currentIndex = (currentIndex - 1 + aliens.length) % aliens.length;
+                sndScroll();
+                updateHologram();
+            }
+        });
+
+        detransformBtn.addEventListener('click', detransform);
+
+        // --- DATABASE LOGIC ---
+        function populateDatabase() {
+            dbGrid.innerHTML = '';
+            aliens.forEach((alien, index) => {
+                const card = document.createElement('div');
+                card.className = 'db-card';
+                card.innerHTML = `
+                    <svg viewBox="0 0 100 100">${alien.svg}</svg>
+                    <div style="font-weight:bold; margin-bottom:5px;">${alien.name}</div>
+                    <div style="font-size:0.8rem; opacity:0.8;">${alien.type}</div>
+                `;
+                card.onclick = () => {
+                    currentIndex = index;
+                    dbModal.classList.remove('active');
+                    if(state === 'idle') toggleActive();
+                    else updateHologram();
+                };
+                dbGrid.appendChild(card);
+            });
+        }
+
+        openDbBtn.addEventListener('click', () => {
+            sndScroll();
+            populateDatabase();
+            dbModal.classList.add('active');
+        });
+
+        closeDbBtn.addEventListener('click', () => {
+            sndScroll();
+            dbModal.classList.remove('active');
+        });
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            muteBtn.innerText = isMuted ? 'AUDIO: OFF' : 'AUDIO: ON';
+            if(!isMuted && audioCtx.state === 'suspended') audioCtx.resume();
+        });
+
+        // Utils
+        function hexToRgb(hex) {
+            let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '0, 255, 65';
+        }
+
+    </script>
+</body>
+</html>
